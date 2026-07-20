@@ -47,12 +47,6 @@ const LoginPage = () => {
       toast.success('Welcome back to StudyOS!');
       navigate(from, { replace: true });
     } catch (err) {
-      if (err.response?.data?.isUnverified) {
-        toast.error('Email unverified. Redirecting to OTP verification...');
-        navigate(`/verify-email?email=${encodeURIComponent(form.email.trim())}`);
-        return;
-      }
-
       const msg = err.response?.data?.message || 'Login failed. Please check your credentials.';
       toast.error(msg);
       if (msg.toLowerCase().includes('password')) {

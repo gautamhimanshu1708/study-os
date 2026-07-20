@@ -24,6 +24,16 @@ const userSchema = new mongoose.Schema(
       minlength: [6, 'Password must be at least 6 characters'],
       select: false, // never return password in queries
     },
+    securityQuestion: {
+      type: String,
+      required: [true, 'Security question is required'],
+      trim: true,
+    },
+    securityAnswer: {
+      type: String,
+      required: [true, 'Security answer is required'],
+      select: false, // stored securely hashed
+    },
     avatar: {
       type: String,
       default: '',
@@ -33,51 +43,37 @@ const userSchema = new mongoose.Schema(
       enum: ['user', 'admin'],
       default: 'user',
     },
-    isVerified: {
-      type: Boolean,
-      default: false,
-    },
-    verificationOtp: {
-      type: String,
-      select: false,
-    },
-    verificationOtpExpire: {
-      type: Date,
-      select: false,
-    },
-    resetPasswordOtp: {
-      type: String,
-      select: false,
-    },
-    resetPasswordOtpExpire: {
-      type: Date,
-      select: false,
-    },
-    resetPasswordToken: {
-      type: String,
-      select: false,
-    },
-    resetPasswordExpire: {
-      type: Date,
-      select: false,
-    },
   },
   {
     timestamps: true,
   }
 );
 
-// Pre-save hook: hash password before saving
+// Pre-save hook: hash password and securityAnswer before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  const salt = await bcrypt.genSalt(12);
-  this.password = await bcrypt.hash(this.password, salt);
+  if (this.isModified('password')) {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
+  if (this.isModified('securityAnswer')) {
+    const salt = await bcrypt.genSalt(12);
+    // Normalize security answer to lowercase trimmed string before hashing
+    const normalizedAnswer = this.securityAnswer.trim().toLowerCase();
+    this.securityAnswer = await bcrypt.hash(normalizedAnswer, salt);
+  }
   next();
 });
 
 // Instance method: compare entered password with hashed
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Instance method: compare entered security answer with hashed answer
+userSchema.methods.matchSecurityAnswer = async function (enteredAnswer) {
+  if (!enteredAnswer || !this.securityAnswer) return false;
+  const normalizedAnswer = enteredAnswer.trim().toLowerCase();
+  return await bcrypt.compare(normalizedAnswer, this.securityAnswer);
 };
 
 // Instance method: get user's initials for avatar fallback

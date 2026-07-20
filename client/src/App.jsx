@@ -4,7 +4,6 @@ import { Toaster } from 'react-hot-toast';
 // Auth pages
 import LoginPage          from './pages/auth/LoginPage';
 import SignupPage         from './pages/auth/SignupPage';
-import VerifyEmailPage    from './pages/auth/VerifyEmailPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage  from './pages/auth/ResetPasswordPage';
 
@@ -49,12 +48,10 @@ const App = () => {
 
       <Routes>
         {/* Public routes */}
-        <Route path="/login"                  element={<LoginPage />} />
-        <Route path="/signup"                 element={<SignupPage />} />
-        <Route path="/verify-email"           element={<VerifyEmailPage />} />
-        <Route path="/forgot-password"        element={<ForgotPasswordPage />} />
-        <Route path="/reset-password"         element={<ResetPasswordPage />} />
-        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/login"           element={<LoginPage />} />
+        <Route path="/signup"          element={<SignupPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password"  element={<ResetPasswordPage />} />
 
         {/* Protected app routes */}
         <Route
@@ -64,22 +61,22 @@ const App = () => {
             </ProtectedRoute>
           }
         >
-          <Route path="/dashboard"    element={<DashboardPage />} />
-          <Route path="/focus"        element={<FocusTimerPage />} />
-          <Route path="/planner"      element={<PlannerPage />} />
-          <Route path="/courses"      element={<CoursePage />} />
-          <Route path="/goals"        element={<GoalPage />} />
-          <Route path="/notes"        element={<NotesPage />} />
-          <Route path="/deadlines"    element={<DeadlinesPage />} />
-          <Route path="/consistency"  element={<ConsistencyPage />} />
-          <Route path="/analytics"    element={<AnalyticsPage />} />
-          <Route path="/profile"      element={<ProfilePage />} />
-          <Route path="/settings"     element={<ProfilePage />} />
+          <Route path="/dashboard font-sans" element={<DashboardPage />} />
+          <Route path="/dashboard"         element={<DashboardPage />} />
+          <Route path="/focus"             element={<FocusTimerPage />} />
+          <Route path="/planner"           element={<PlannerPage />} />
+          <Route path="/courses"           element={<CoursePage />} />
+          <Route path="/goals"             element={<GoalPage />} />
+          <Route path="/notes"             element={<NotesPage />} />
+          <Route path="/deadlines"         element={<DeadlinesPage />} />
+          <Route path="/consistency font-sans" element={<ConsistencyPage />} />
+          <Route path="/consistency"       element={<ConsistencyPage />} />
+          <Route path="/analytics"         element={<AnalyticsPage />} />
+          <Route path="/profile"           element={<ProfilePage />} />
         </Route>
 
-        {/* Default redirect */}
-        <Route path="/"  element={<Navigate to="/dashboard" replace />} />
-        <Route path="*"  element={<Navigate to="/dashboard" replace />} />
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </>
   );

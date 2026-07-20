@@ -3,12 +3,10 @@ import { body } from 'express-validator';
 import {
   register,
   login,
+  getSecurityQuestion,
+  resetPassword,
   getMe,
   updateProfile,
-  forgotPassword,
-  resetPassword,
-  verifyEmail,
-  resendOtp,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -20,6 +18,8 @@ const registerValidation = [
   body('name').trim().notEmpty().withMessage('Name is required').isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('securityQuestion').notEmpty().withMessage('Security question is required'),
+  body('securityAnswer').notEmpty().withMessage('Security answer is required'),
 ];
 
 const loginValidation = [
@@ -31,12 +31,9 @@ const loginValidation = [
 
 router.post('/register', registerValidation, register);
 router.post('/login', loginValidation, login);
-router.post('/verify-email', verifyEmail);
-router.post('/resend-otp', resendOtp);
+router.post('/get-security-question', getSecurityQuestion);
+router.post('/reset-password', resetPassword);
 router.get('/me', protect, getMe);
 router.put('/update-profile', protect, updateProfile);
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
-router.put('/reset-password/:token', resetPassword);
 
 export default router;

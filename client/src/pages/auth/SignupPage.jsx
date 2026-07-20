@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Zap, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, Zap, ArrowRight, HelpCircle, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuth from '../../hooks/useAuth';
 import Input from '../../components/ui/Input';
@@ -24,6 +24,14 @@ const STRENGTH_CONFIG = [
   { label: 'Strong', color: 'bg-success' },
 ];
 
+const PRESET_SECURITY_QUESTIONS = [
+  "What was the name of your first pet?",
+  "What city were you born in?",
+  "What was your mother's maiden name?",
+  "What was the name of your first school?",
+  "What is your favorite book or movie?",
+];
+
 const SignupPage = () => {
   const { register } = useAuth();
   const navigate     = useNavigate();
@@ -33,6 +41,8 @@ const SignupPage = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    securityQuestion: PRESET_SECURITY_QUESTIONS[0],
+    securityAnswer: '',
   });
 
   const [errors, setErrors]   = useState({});
@@ -60,6 +70,12 @@ const SignupPage = () => {
     } else if (form.password !== form.confirmPassword) {
       errs.confirmPassword = 'Passwords do not match';
     }
+    if (!form.securityQuestion.trim()) {
+      errs.securityQuestion = 'Please select a security question';
+    }
+    if (!form.securityAnswer.trim()) {
+      errs.securityAnswer = 'Security answer is required for password recovery';
+    }
     return errs;
   };
 
@@ -76,9 +92,15 @@ const SignupPage = () => {
 
     setLoading(true);
     try {
-      await register(form.name.trim(), form.email.trim(), form.password);
-      toast.success('Account created! Please enter the 6-digit OTP code sent to your email.');
-      navigate(`/verify-email?email=${encodeURIComponent(form.email.trim())}`);
+      await register({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        securityQuestion: form.securityQuestion,
+        securityAnswer: form.securityAnswer.trim(),
+      });
+      toast.success('Account created successfully! Welcome to StudyOS');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       const msg = err.response?.data?.message || 'Registration failed. Please try again.';
       toast.error(msg);
@@ -93,8 +115,7 @@ const SignupPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 relative overflow-hidden bg-base-950 text-text-primary">
       {/* Background Ambient Orbs */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-accent-600/15 to-primary-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-violet-500/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-primary-600/15 to-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-md animate-fade-in relative z-10 my-auto py-6">
         {/* StudyOS Logo Header */}
@@ -113,10 +134,10 @@ const SignupPage = () => {
         <div className="glass-card p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-2xl bg-base-900/75 transition-all">
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-extrabold text-text-primary tracking-tight">
-              Create an Account
+              Create Account
             </h1>
             <p className="text-xs text-text-secondary mt-1.5">
-              Sign up to get started with StudyOS
+              Set up your profile & security question to get started.
             </p>
           </div>
 
@@ -125,8 +146,8 @@ const SignupPage = () => {
               id="signup-name"
               name="name"
               type="text"
-              label="Full name"
-              placeholder="Alex Johnson"
+              label="Full Name"
+              placeholder="Alex Smith"
               value={form.name}
               onChange={handleChange}
               error={errors.name}
@@ -140,8 +161,8 @@ const SignupPage = () => {
               id="signup-email"
               name="email"
               type="email"
-              label="Email address"
-              placeholder="name@company.com"
+              label="Email Address"
+              placeholder="alex@example.com"
               value={form.email}
               onChange={handleChange}
               error={errors.email}
@@ -157,7 +178,7 @@ const SignupPage = () => {
                 name="password"
                 type="password"
                 label="Password"
-                placeholder="Min. 6 characters"
+                placeholder="Minimum 6 characters"
                 value={form.password}
                 onChange={handleChange}
                 error={errors.password}
@@ -166,35 +187,37 @@ const SignupPage = () => {
                 disabled={loading}
                 autoComplete="new-password"
               />
-              {/* Password Strength Meter */}
+
+              {/* Password Strength Indicator */}
               {form.password && (
                 <div className="mt-2 space-y-1">
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 h-1.5 w-full rounded-full bg-base-800 overflow-hidden">
                     {[1, 2, 3, 4].map((step) => (
                       <div
                         key={step}
-                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                        className={`h-full flex-1 transition-all duration-300 ${
                           step <= pwdScore
-                            ? STRENGTH_CONFIG[pwdScore - 1]?.color || 'bg-primary-400'
-                            : 'bg-base-700'
+                            ? STRENGTH_CONFIG[pwdScore - 1]?.color || 'bg-primary-500'
+                            : 'bg-transparent'
                         }`}
                       />
                     ))}
                   </div>
-                  {pwdScore > 0 && (
-                    <p className="text-[10px] text-text-muted">
-                      Strength: <span className="font-semibold text-text-secondary">{STRENGTH_CONFIG[pwdScore - 1]?.label}</span>
-                    </p>
-                  )}
+                  <div className="flex justify-between items-center text-[10px] text-text-muted">
+                    <span>Password Strength</span>
+                    <span className="font-semibold text-text-secondary">
+                      {pwdScore > 0 ? STRENGTH_CONFIG[pwdScore - 1]?.label : 'Too short'}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
 
             <Input
-              id="signup-confirmpassword"
+              id="signup-confirm-password"
               name="confirmPassword"
               type="password"
-              label="Confirm password"
+              label="Confirm Password"
               placeholder="Re-enter your password"
               value={form.confirmPassword}
               onChange={handleChange}
@@ -205,6 +228,50 @@ const SignupPage = () => {
               autoComplete="new-password"
             />
 
+            {/* Security Question Field */}
+            <div className="space-y-1.5 pt-1">
+              <label htmlFor="signup-security-question" className="block text-xs font-semibold text-text-secondary">
+                Security Question (for password recovery)
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-text-muted">
+                  <HelpCircle size={16} />
+                </div>
+                <select
+                  id="signup-security-question"
+                  name="securityQuestion"
+                  value={form.securityQuestion}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className="w-full pl-10 pr-4 py-2.5 bg-base-950/80 border border-white/10 rounded-xl text-xs text-text-primary focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none transition-all appearance-none cursor-pointer"
+                >
+                  {PRESET_SECURITY_QUESTIONS.map((q, idx) => (
+                    <option key={idx} value={q} className="bg-base-900 text-text-primary">
+                      {q}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {errors.securityQuestion && (
+                <p className="text-[11px] text-danger mt-1">{errors.securityQuestion}</p>
+              )}
+            </div>
+
+            {/* Security Answer Field */}
+            <Input
+              id="signup-security-answer"
+              name="securityAnswer"
+              type="text"
+              label="Security Answer"
+              placeholder="Your secret answer"
+              value={form.securityAnswer}
+              onChange={handleChange}
+              error={errors.securityAnswer}
+              leftIcon={<ShieldCheck size={16} />}
+              required
+              disabled={loading}
+            />
+
             <Button
               type="submit"
               variant="primary"
@@ -213,37 +280,21 @@ const SignupPage = () => {
               loading={loading}
               disabled={loading}
               className="mt-2 py-3 text-sm font-bold shadow-lg shadow-primary-500/25 rounded-xl hover:scale-[1.01] active:scale-[0.99] transition-all"
-              rightIcon={!loading ? <ArrowRight size={16} /> : null}
             >
               {loading ? 'Creating Account...' : 'Create Account'}
+              {!loading && <ArrowRight size={16} className="ml-2" />}
             </Button>
           </form>
 
-          {/* Footer Link */}
           <div className="text-center mt-6 pt-5 border-t border-border/60">
             <p className="text-xs text-text-secondary">
               Already have an account?{' '}
-              <Link
-                to="/login"
-                className="text-primary-400 hover:text-primary-300 font-bold transition-colors underline-offset-4 hover:underline"
-              >
+              <Link to="/login" className="font-semibold text-primary-400 hover:text-primary-300 transition-colors">
                 Sign in
               </Link>
             </p>
           </div>
         </div>
-
-        {/* Footer info */}
-        <p className="mt-6 text-center text-[11px] text-text-muted">
-          By signing up, you agree to StudyOS&apos;s{' '}
-          <span className="text-text-secondary hover:text-primary-400 cursor-pointer transition-colors">
-            Terms of Service
-          </span>{' '}
-          and{' '}
-          <span className="text-text-secondary hover:text-primary-400 cursor-pointer transition-colors">
-            Privacy Policy
-          </span>.
-        </p>
       </div>
     </div>
   );

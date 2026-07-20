@@ -46,22 +46,13 @@ export const AuthProvider = ({ children }) => {
   }, [persistAuth]);
 
   // ── Register ──────────────────────────────────────────────────────────────
-  const register = useCallback(async (name, email, password) => {
-    const data = await registerUser({ name, email, password });
-    if (data.token && data.user?.isVerified) {
-      persistAuth(data.user, data.token);
-    }
-    return data;
-  }, [persistAuth]);
-
-  // ── Verify Email OTP ──────────────────────────────────────────────────────
-  const verifyOtp = useCallback(async (email, otp) => {
-    const data = await verifyEmailOtp({ email, otp });
+  const register = useCallback(async (registrationData) => {
+    const data = await registerUser(registrationData);
     const { token: jwt, user: userData } = data;
     if (jwt && userData) {
       persistAuth(userData, jwt);
     }
-    return data;
+    return userData;
   }, [persistAuth]);
 
   // ── Logout ────────────────────────────────────────────────────────────────
@@ -98,7 +89,6 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!token,
     login,
     register,
-    verifyOtp,
     logout,
     updateUser,
     refreshUser,

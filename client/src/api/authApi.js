@@ -1,7 +1,7 @@
 import axiosInstance from './axiosInstance';
 
 /**
- * Authentication API Endpoints
+ * Authentication API Endpoints (Security Question Authentication)
  */
 
 export const loginUser = async (credentials) => {
@@ -14,32 +14,18 @@ export const registerUser = async (userData) => {
   return response.data;
 };
 
-export const verifyEmailOtp = async (data) => {
-  const response = await axiosInstance.post('/auth/verify-email', data);
+export const getSecurityQuestion = async (email) => {
+  const response = await axiosInstance.post('/auth/get-security-question', { email });
   return response.data;
 };
 
-export const resendOtp = async (data) => {
-  const response = await axiosInstance.post('/auth/resend-otp', data);
+export const resetPasswordWithSecurityAnswer = async (resetData) => {
+  const response = await axiosInstance.post('/auth/reset-password', resetData);
   return response.data;
 };
 
 export const getCurrentUser = async () => {
   const response = await axiosInstance.get('/auth/me');
-  return response.data;
-};
-
-export const forgotPassword = async (email) => {
-  const response = await axiosInstance.post('/auth/forgot-password', { email });
-  return response.data;
-};
-
-export const resetPassword = async (data, token) => {
-  if (token) {
-    const response = await axiosInstance.put(`/auth/reset-password/${token}`, data);
-    return response.data;
-  }
-  const response = await axiosInstance.post('/auth/reset-password', data);
   return response.data;
 };
 
