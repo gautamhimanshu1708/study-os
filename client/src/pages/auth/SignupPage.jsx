@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Zap, ArrowRight, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuth from '../../hooks/useAuth';
 import Input from '../../components/ui/Input';
@@ -29,8 +29,7 @@ const SignupPage = () => {
   const navigate     = useNavigate();
 
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -43,8 +42,8 @@ const SignupPage = () => {
 
   const validate = () => {
     const errs = {};
-    if (!form.firstName.trim()) {
-      errs.firstName = 'First name is required';
+    if (!form.name.trim()) {
+      errs.name = 'Full name is required';
     }
     if (!form.email.trim()) {
       errs.email = 'Email address is required';
@@ -54,7 +53,7 @@ const SignupPage = () => {
     if (!form.password) {
       errs.password = 'Password is required';
     } else if (form.password.length < 6) {
-      errs.password = 'Must be at least 6 characters';
+      errs.password = 'Password must be at least 6 characters';
     }
     if (!form.confirmPassword) {
       errs.confirmPassword = 'Confirm your password';
@@ -77,8 +76,7 @@ const SignupPage = () => {
 
     setLoading(true);
     try {
-      const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
-      await register(fullName, form.email.trim(), form.password);
+      await register(form.name.trim(), form.email.trim(), form.password);
       toast.success('Account created! Welcome to StudyOS');
       navigate('/dashboard', { replace: true });
     } catch (err) {
@@ -94,11 +92,11 @@ const SignupPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 relative overflow-hidden bg-base-950 text-text-primary">
-      {/* Background Orbs */}
-      <div className="absolute top-1/4 right-1/2 translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-accent-600/15 to-primary-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-10 left-10 w-[400px] h-[400px] bg-violet-500/10 rounded-full blur-[100px] pointer-events-none" />
+      {/* Background Ambient Orbs */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-accent-600/15 to-primary-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-violet-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="w-full max-w-xl animate-fade-in relative z-10 my-auto py-6">
+      <div className="w-full max-w-md animate-fade-in relative z-10 my-auto py-6">
         {/* StudyOS SaaS Header Logo */}
         <div className="flex flex-col items-center mb-8 text-center">
           <Link to="/" className="inline-flex items-center gap-3 group focus:outline-none mb-3">
@@ -110,7 +108,7 @@ const SignupPage = () => {
             </span>
           </Link>
           <p className="text-xs font-medium text-text-muted uppercase tracking-widest flex items-center gap-1.5">
-            <ShieldCheck size={13} className="text-primary-400" /> Start Your Productivity Engine Free
+            <ShieldCheck size={13} className="text-primary-400" /> Apple-Inspired Productivity Engine
           </p>
         </div>
 
@@ -118,66 +116,35 @@ const SignupPage = () => {
         <div className="glass-card p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-2xl bg-base-900/75 transition-all">
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-extrabold text-text-primary tracking-tight">
-              Create your StudyOS Account
+              Create an Account
             </h1>
             <p className="text-xs text-text-secondary mt-1.5">
-              Join thousands of students mastering their academic goals
+              Sign up to get started with StudyOS
             </p>
           </div>
 
-          {/* Features Pill Banner */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6 p-3 rounded-2xl bg-base-800/40 border border-white/5">
-            {[
-              'Pomodoro Focus',
-              'Goal & Course Tracking',
-              'Productivity Analytics',
-            ].map((feature) => (
-              <div key={feature} className="flex items-center justify-center sm:justify-start gap-1.5 text-[11px] font-semibold text-text-secondary">
-                <CheckCircle2 size={13} className="text-primary-400 shrink-0" />
-                <span>{feature}</span>
-              </div>
-            ))}
-          </div>
-
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
-            {/* Desktop Two-Column Grid for Names */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                id="signup-firstname"
-                name="firstName"
-                type="text"
-                label="First name"
-                placeholder="Alex"
-                value={form.firstName}
-                onChange={handleChange}
-                error={errors.firstName}
-                leftIcon={<User size={16} />}
-                required
-                disabled={loading}
-                autoComplete="given-name"
-              />
-              <Input
-                id="signup-lastname"
-                name="lastName"
-                type="text"
-                label="Last name"
-                placeholder="Johnson"
-                value={form.lastName}
-                onChange={handleChange}
-                error={errors.lastName}
-                leftIcon={<User size={16} />}
-                disabled={loading}
-                autoComplete="family-name"
-              />
-            </div>
+            <Input
+              id="signup-name"
+              name="name"
+              type="text"
+              label="Full name"
+              placeholder="Alex Johnson"
+              value={form.name}
+              onChange={handleChange}
+              error={errors.name}
+              leftIcon={<User size={16} />}
+              required
+              disabled={loading}
+              autoComplete="name"
+            />
 
-            {/* Email Field */}
             <Input
               id="signup-email"
               name="email"
               type="email"
               label="Email address"
-              placeholder="alex@university.edu"
+              placeholder="name@company.com"
               value={form.email}
               onChange={handleChange}
               error={errors.email}
@@ -187,62 +154,59 @@ const SignupPage = () => {
               autoComplete="email"
             />
 
-            {/* Desktop Two-Column Grid for Passwords */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Input
-                  id="signup-password"
-                  name="password"
-                  type="password"
-                  label="Password"
-                  placeholder="Min. 6 chars"
-                  value={form.password}
-                  onChange={handleChange}
-                  error={errors.password}
-                  leftIcon={<Lock size={16} />}
-                  required
-                  disabled={loading}
-                  autoComplete="new-password"
-                />
-                {/* Password Strength Meter */}
-                {form.password && (
-                  <div className="mt-2 space-y-1">
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4].map((step) => (
-                        <div
-                          key={step}
-                          className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                            step <= pwdScore
-                              ? STRENGTH_CONFIG[pwdScore - 1]?.color || 'bg-primary-400'
-                              : 'bg-base-700'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    {pwdScore > 0 && (
-                      <p className="text-[10px] text-text-muted">
-                        Strength: <span className="font-semibold text-text-secondary">{STRENGTH_CONFIG[pwdScore - 1]?.label}</span>
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
+            <div>
               <Input
-                id="signup-confirmpassword"
-                name="confirmPassword"
+                id="signup-password"
+                name="password"
                 type="password"
-                label="Confirm password"
-                placeholder="Re-enter password"
-                value={form.confirmPassword}
+                label="Password"
+                placeholder="Min. 6 characters"
+                value={form.password}
                 onChange={handleChange}
-                error={errors.confirmPassword}
+                error={errors.password}
                 leftIcon={<Lock size={16} />}
                 required
                 disabled={loading}
                 autoComplete="new-password"
               />
+              {/* Password Strength Meter */}
+              {form.password && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map((step) => (
+                      <div
+                        key={step}
+                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                          step <= pwdScore
+                            ? STRENGTH_CONFIG[pwdScore - 1]?.color || 'bg-primary-400'
+                            : 'bg-base-700'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  {pwdScore > 0 && (
+                    <p className="text-[10px] text-text-muted">
+                      Strength: <span className="font-semibold text-text-secondary">{STRENGTH_CONFIG[pwdScore - 1]?.label}</span>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
+
+            <Input
+              id="signup-confirmpassword"
+              name="confirmPassword"
+              type="password"
+              label="Confirm password"
+              placeholder="Re-enter your password"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              error={errors.confirmPassword}
+              leftIcon={<Lock size={16} />}
+              required
+              disabled={loading}
+              autoComplete="new-password"
+            />
 
             <Button
               type="submit"
@@ -251,27 +215,27 @@ const SignupPage = () => {
               size="lg"
               loading={loading}
               disabled={loading}
-              className="mt-4 py-3 text-sm font-bold shadow-lg shadow-primary-500/25 rounded-xl hover:scale-[1.01] active:scale-[0.99] transition-all"
+              className="mt-2 py-3 text-sm font-bold shadow-lg shadow-primary-500/25 rounded-xl hover:scale-[1.01] active:scale-[0.99] transition-all"
               rightIcon={!loading ? <ArrowRight size={16} /> : null}
             >
-              {loading ? 'Creating Account...' : 'Get Started Free'}
+              {loading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>
 
-          {/* SaaS Divider */}
+          {/* Clean SaaS Divider */}
           <div className="relative my-6 text-center">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-border/80" />
             </div>
             <span className="relative px-3 bg-base-900/90 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-              Already registered?
+              Or
             </span>
           </div>
 
           {/* Footer Link */}
           <div className="text-center">
             <p className="text-xs text-text-secondary">
-              Already have a StudyOS account?{' '}
+              Already have an account?{' '}
               <Link
                 to="/login"
                 className="text-primary-400 hover:text-primary-300 font-bold transition-colors underline-offset-4 hover:underline"
@@ -284,11 +248,11 @@ const SignupPage = () => {
 
         {/* Footer info */}
         <p className="mt-6 text-center text-[11px] text-text-muted">
-          By signing up, you agree to the StudyOS{' '}
+          By signing up, you agree to StudyOS&apos;s{' '}
           <span className="text-text-secondary hover:text-primary-400 cursor-pointer transition-colors">
             Terms of Service
           </span>{' '}
-          &amp;{' '}
+          and{' '}
           <span className="text-text-secondary hover:text-primary-400 cursor-pointer transition-colors">
             Privacy Policy
           </span>.
