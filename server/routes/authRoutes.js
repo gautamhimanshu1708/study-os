@@ -7,6 +7,8 @@ import {
   updateProfile,
   forgotPassword,
   resetPassword,
+  verifyEmail,
+  resendOtp,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -29,9 +31,12 @@ const loginValidation = [
 
 router.post('/register', registerValidation, register);
 router.post('/login', loginValidation, login);
+router.post('/verify-email', verifyEmail);
+router.post('/resend-otp', resendOtp);
 router.get('/me', protect, getMe);
 router.put('/update-profile', protect, updateProfile);
 router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 router.put('/reset-password/:token', resetPassword);
 
 export default router;

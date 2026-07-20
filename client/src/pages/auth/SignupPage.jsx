@@ -77,8 +77,8 @@ const SignupPage = () => {
     setLoading(true);
     try {
       await register(form.name.trim(), form.email.trim(), form.password);
-      toast.success('Account created! Welcome to StudyOS');
-      navigate('/dashboard', { replace: true });
+      toast.success('Account created! Please enter the 6-digit OTP code sent to your email.');
+      navigate(`/verify-email?email=${encodeURIComponent(form.email.trim())}`);
     } catch (err) {
       const msg = err.response?.data?.message || 'Registration failed. Please try again.';
       toast.error(msg);

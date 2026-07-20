@@ -14,6 +14,16 @@ export const registerUser = async (userData) => {
   return response.data;
 };
 
+export const verifyEmailOtp = async (data) => {
+  const response = await axiosInstance.post('/auth/verify-email', data);
+  return response.data;
+};
+
+export const resendOtp = async (data) => {
+  const response = await axiosInstance.post('/auth/resend-otp', data);
+  return response.data;
+};
+
 export const getCurrentUser = async () => {
   const response = await axiosInstance.get('/auth/me');
   return response.data;
@@ -24,8 +34,12 @@ export const forgotPassword = async (email) => {
   return response.data;
 };
 
-export const resetPassword = async (token, password) => {
-  const response = await axiosInstance.put(`/auth/reset-password/${token}`, { password });
+export const resetPassword = async (data, token) => {
+  if (token) {
+    const response = await axiosInstance.put(`/auth/reset-password/${token}`, data);
+    return response.data;
+  }
+  const response = await axiosInstance.post('/auth/reset-password', data);
   return response.data;
 };
 

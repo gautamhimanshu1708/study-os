@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 // Auth pages
 import LoginPage          from './pages/auth/LoginPage';
 import SignupPage         from './pages/auth/SignupPage';
+import VerifyEmailPage    from './pages/auth/VerifyEmailPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage  from './pages/auth/ResetPasswordPage';
 
@@ -50,7 +51,9 @@ const App = () => {
         {/* Public routes */}
         <Route path="/login"                  element={<LoginPage />} />
         <Route path="/signup"                 element={<SignupPage />} />
+        <Route path="/verify-email"           element={<VerifyEmailPage />} />
         <Route path="/forgot-password"        element={<ForgotPasswordPage />} />
+        <Route path="/reset-password"         element={<ResetPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
         {/* Protected app routes */}
