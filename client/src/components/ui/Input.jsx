@@ -30,7 +30,7 @@ const Input = forwardRef(({
       <div className="relative">
         {/* Left icon */}
         {leftIcon && (
-          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none transition-colors">
             {leftIcon}
           </div>
         )}
@@ -40,9 +40,10 @@ const Input = forwardRef(({
           id={id}
           type={inputType}
           className={`
-            w-full bg-base-500 border text-text-primary placeholder:text-text-muted
+            w-full bg-surface-secondary border text-text-primary placeholder:text-text-muted
             rounded-xl px-4 py-2.5 text-sm
             transition-all duration-200
+            caret-primary-400
             focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500
             ${error
               ? 'border-danger focus:ring-danger/30 focus:border-danger'
@@ -60,13 +61,14 @@ const Input = forwardRef(({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors focus:outline-none"
             tabIndex={-1}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         ) : rightIcon ? (
-          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-muted">
+          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-secondary">
             {rightIcon}
           </div>
         ) : null}

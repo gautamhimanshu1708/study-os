@@ -7,6 +7,7 @@
 
 /* ── CSS Theme Variables ────────────────────────────────────────────────────── */
 :root, .dark {
+  color-scheme: dark;
   --bg-base: #07070f;
   --bg-surface-primary: #0a0a15;
   --bg-surface-secondary: #13131f;
@@ -23,9 +24,19 @@
   --toast-bg: #13131f;
   --toast-fg: #e2e8f0;
   --toast-border: #1e1e2e;
+
+  /* Global Form Control Design Tokens - Dark Mode */
+  --input-bg: #13131f;
+  --input-bg-focus: #191927;
+  --input-text: #ffffff;
+  --input-placeholder: #94a3b8;
+  --input-border: #1e1e2e;
+  --input-border-hover: #3b3b54;
+  --input-caret: #818cf8;
 }
 
 .light {
+  color-scheme: light;
   --bg-base: #f7f7f9;
   --bg-surface-primary: #ffffff;
   --bg-surface-secondary: #f1f5f9;
@@ -42,6 +53,15 @@
   --toast-bg: #ffffff;
   --toast-fg: #0f172a;
   --toast-border: #e2e8f0;
+
+  /* Global Form Control Design Tokens - Light Mode */
+  --input-bg: #ffffff;
+  --input-bg-focus: #ffffff;
+  --input-text: #0f172a;
+  --input-placeholder: #64748b;
+  --input-border: #cbd5e1;
+  --input-border-hover: #94a3b8;
+  --input-caret: #4f46e5;
 }
 
 /* ── Base Reset ─────────────────────────────────────────────────────────────── */
@@ -52,6 +72,11 @@
 
   html {
     scroll-behavior: smooth;
+    color-scheme: dark;
+  }
+
+  html.light {
+    color-scheme: light;
   }
 
   body {
@@ -68,6 +93,52 @@
 
   .light body {
     background-image: radial-gradient(ellipse at 50% -10%, rgba(99,102,241,0.05) 0%, transparent 60%);
+  }
+
+  /* Global Form Control Input/Textarea/Select rules */
+  input, textarea, select {
+    color: var(--input-text) !important;
+    caret-color: var(--input-caret) !important;
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: var(--input-placeholder) !important;
+    opacity: 1 !important;
+  }
+
+  /* Universal Webkit/Blink Browser Autofill Override */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  textarea:-webkit-autofill:active,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus,
+  select:-webkit-autofill:active {
+    -webkit-text-fill-color: var(--input-text) !important;
+    -webkit-box-shadow: 0 0 0px 1000px var(--input-bg) inset !important;
+    box-shadow: 0 0 0px 1000px var(--input-bg) inset !important;
+    border-color: var(--input-border) !important;
+    transition: background-color 50000s ease-in-out 0s !important;
+    caret-color: var(--input-caret) !important;
+  }
+
+  /* Custom dropdown styling for select elements */
+  select option {
+    background-color: var(--bg-surface-secondary);
+    color: var(--text-primary);
+  }
+
+  /* Date / Time calendar picker icon visibility */
+  ::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+  }
+  .dark ::-webkit-calendar-picker-indicator {
+    filter: invert(0.9) hue-rotate(180deg);
   }
 
   ::-webkit-scrollbar {
