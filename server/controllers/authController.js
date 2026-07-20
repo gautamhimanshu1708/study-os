@@ -2,8 +2,13 @@ import crypto from 'crypto';
 import { validationResult } from 'express-validator';
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
-import { sendResendEmail } from '../utils/resendEmail.js';
-import { getVerificationOtpTemplate, getResetPasswordOtpTemplate } from '../utils/emailTemplates.js';
+import sendEmail from '../utils/sendEmail.js';
+import {
+  getVerificationOtpTemplate,
+  getResetPasswordOtpTemplate,
+  getPasswordResetSuccessTemplate,
+  getWelcomeEmailTemplate,
+} from '../utils/emailTemplates.js';
 
 // Helper to send standard auth response
 const sendTokenResponse = (user, statusCode, res) => {
@@ -47,7 +52,7 @@ export const register = async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       if (!existingUser.isVerified) {
-        // If user exists but is unverified, regenerate OTP and resend verification
+        // If user exists but is unverified, regenerate OTP and resend verification email
         const otp = generateOtp();
         existingUser.name = name;
         existingUser.password = password; // Pre-save hook will hash password
@@ -55,7 +60,7 @@ export const register = async (req, res) => {
         existingUser.verificationOtpExpire = Date.now() + 5 * 60 * 1000; // 5 mins
         await existingUser.save();
 
-        await sendResendEmail({
+        await sendEmail({
           to: existingUser.email,
           subject: 'StudyOS - Verify Your Email OTP',
           text: `Your StudyOS verification OTP is: ${otp}. Valid for 5 minutes.`,
@@ -64,7 +69,7 @@ export const register = async (req, res) => {
 
         return res.status(200).json({
           success: true,
-          message: 'Account already registered but unverified. A new OTP has been sent to your email.',
+          message: 'Account registered but unverified. A new 6-digit OTP has been sent via Brevo SMTP.',
           email: existingUser.email,
           isVerified: false,
           devOtp: process.env.NODE_ENV === 'development' ? otp : undefined,
@@ -89,8 +94,8 @@ export const register = async (req, res) => {
       verificationOtpExpire: otpExpire,
     });
 
-    // Send Verification Email via Resend
-    await sendResendEmail({
+    // Send Verification Email via Brevo SMTP / Nodemailer
+    await sendEmail({
       to: user.email,
       subject: 'StudyOS - Verify Your Email OTP',
       text: `Your StudyOS verification OTP is: ${otp}. Valid for 5 minutes.`,
@@ -149,6 +154,14 @@ export const verifyEmail = async (req, res) => {
     user.verificationOtpExpire = undefined;
     await user.save();
 
+    // Send Welcome Email asynchronously
+    sendEmail({
+      to: user.email,
+      subject: 'Welcome to StudyOS! 🚀',
+      text: `Hi ${user.name}, welcome to StudyOS! Your email has been verified successfully.`,
+      html: getWelcomeEmailTemplate({ name: user.name }),
+    }).catch((err) => console.error('Failed to send welcome email:', err));
+
     sendTokenResponse(user, 200, res);
   } catch (error) {
     console.error('VerifyEmail error:', error);
@@ -185,7 +198,7 @@ export const resendOtp = async (req, res) => {
       user.verificationOtpExpire = otpExpire;
       await user.save({ validateBeforeSave: false });
 
-      await sendResendEmail({
+      await sendEmail({
         to: user.email,
         subject: 'StudyOS - Resent Verification OTP',
         text: `Your new StudyOS verification OTP is: ${otp}. Valid for 5 minutes.`,
@@ -196,7 +209,7 @@ export const resendOtp = async (req, res) => {
       user.resetPasswordOtpExpire = otpExpire;
       await user.save({ validateBeforeSave: false });
 
-      await sendResendEmail({
+      await sendEmail({
         to: user.email,
         subject: 'StudyOS - Resent Password Reset OTP',
         text: `Your new StudyOS password reset OTP is: ${otp}. Valid for 5 minutes.`,
@@ -206,7 +219,7 @@ export const resendOtp = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'A new 6-digit OTP code has been sent to your email.',
+      message: 'A new 6-digit OTP code has been sent via Brevo SMTP to your email.',
       devOtp: process.env.NODE_ENV === 'development' ? otp : undefined,
     });
   } catch (error) {
@@ -242,13 +255,13 @@ export const login = async (req, res) => {
 
     // ── LOGIN RESTRICTION FOR UNVERIFIED ACCOUNTS ─────────────────────────────
     if (!user.isVerified) {
-      // Auto-resend fresh verification OTP for convenience
+      // Auto-resend fresh verification OTP
       const otp = generateOtp();
       user.verificationOtp = hashOtp(otp);
       user.verificationOtpExpire = Date.now() + 5 * 60 * 1000;
       await user.save({ validateBeforeSave: false });
 
-      await sendResendEmail({
+      await sendEmail({
         to: user.email,
         subject: 'StudyOS - Complete Your Account Verification',
         text: `Your StudyOS verification OTP is: ${otp}. Valid for 5 minutes.`,
@@ -350,7 +363,7 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordOtpExpire = Date.now() + 5 * 60 * 1000; // 5 minutes
     await user.save({ validateBeforeSave: false });
 
-    await sendResendEmail({
+    await sendEmail({
       to: user.email,
       subject: 'StudyOS - Reset Your Password OTP',
       text: `Your StudyOS password reset OTP is: ${otp}. Valid for 5 minutes.`,
@@ -359,7 +372,7 @@ export const forgotPassword = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Password reset OTP code has been sent to your email.',
+      message: 'Password reset OTP code has been sent via Brevo SMTP to your email.',
       email: user.email,
       devOtp: process.env.NODE_ENV === 'development' ? otp : undefined,
     });
@@ -419,6 +432,14 @@ export const resetPassword = async (req, res) => {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
+
+    // Send Password Reset Successful Notification Email asynchronously
+    sendEmail({
+      to: user.email,
+      subject: 'Your StudyOS Password Was Reset',
+      text: `Hi ${user.name}, your StudyOS account password has been reset successfully.`,
+      html: getPasswordResetSuccessTemplate({ name: user.name }),
+    }).catch((err) => console.error('Failed to send password reset success email:', err));
 
     sendTokenResponse(user, 200, res);
   } catch (error) {

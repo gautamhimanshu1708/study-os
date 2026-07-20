@@ -1,87 +1,86 @@
 import nodemailer from 'nodemailer';
 
 /**
- * Utility to send emails using Nodemailer.
- * Supports configured SMTP credentials (Gmail, Mailtrap, SendGrid, custom SMTP)
- * and falls back to Ethereal / Console logging when credentials are not yet set.
+ * Brevo / Standard SMTP Email Dispatcher using Nodemailer.
+ * Reads SMTP credentials strictly from environment variables:
+ * - process.env.SMTP_HOST
+ * - process.env.SMTP_PORT
+ * - process.env.SMTP_USER
+ * - process.env.SMTP_PASS
  */
-const sendEmail = async (options) => {
-  const smtpHost = process.env.SMTP_HOST || process.env.EMAIL_HOST;
-  const smtpPort = process.env.SMTP_PORT || process.env.EMAIL_PORT || 587;
-  const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
-  const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-  const fromName = process.env.FROM_NAME || 'StudyOS';
-  const fromEmail = process.env.FROM_EMAIL || process.env.EMAIL_FROM || 'noreply@studyos.app';
 
-  let transporter;
+let transporter = null;
 
-  if (smtpHost && smtpUser && smtpPass) {
-    // Standard SMTP / Custom Mailer
+const getTransporter = () => {
+  if (transporter) return transporter;
+
+  const host = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
+  const port = Number(process.env.SMTP_PORT) || 587;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (user && pass) {
     transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: Number(smtpPort),
-      secure: Number(smtpPort) === 465, // true for 465, false for other ports
+      host,
+      port,
+      secure: port === 465, // true for port 465, false for 587 or other ports
       auth: {
-        user: smtpUser,
-        pass: smtpPass,
+        user,
+        pass,
+      },
+      tls: {
+        rejectUnauthorized: false,
       },
     });
-  } else if (smtpUser && smtpPass) {
-    // Gmail or standard service fallback
-    transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || 'gmail',
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    });
-  } else {
-    // Development fallback: Log email details and create Ethereal test transport if possible
-    console.log('\n=============================================================');
-    console.log('📧 [StudyOS Mailer - No SMTP Configured]');
-    console.log(`TO:      ${options.email}`);
-    console.log(`SUBJECT: ${options.subject}`);
-    console.log('-------------------------------------------------------------');
-    console.log('BODY preview / HTML link:');
-    if (options.resetUrl) {
-      console.log(`🔗 Password Reset URL: ${options.resetUrl}`);
-    }
-    console.log('=============================================================\n');
 
-    // Create Ethereal test account automatically for local development testing
-    try {
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-    } catch (testErr) {
-      console.warn('Could not create Ethereal test account:', testErr.message);
-      return { previewUrl: options.resetUrl || null };
-    }
+    // Test connection on initialization
+    transporter.verify((error) => {
+      if (error) {
+        console.error('❌ [Brevo SMTP] Connection Failed:', error.message);
+      } else {
+        console.log('✅ [Brevo SMTP] Server Connected Successfully & Ready to Send Emails');
+      }
+    });
   }
 
-  const message = {
-    from: `"${fromName}" <${fromEmail}>`,
-    to: options.email,
+  return transporter;
+};
+
+const sendEmail = async (options) => {
+  const mailTransporter = getTransporter();
+
+  const fromName = process.env.FROM_NAME || 'StudyOS Team';
+  const fromEmail = process.env.FROM_EMAIL || process.env.SMTP_USER || 'noreply@studyos.app';
+  const sender = `"${fromName}" <${fromEmail}>`;
+
+  if (!mailTransporter) {
+    // Development fallback when local SMTP environment variables are missing
+    console.log('\n=============================================================');
+    console.log('📧 [StudyOS Local Mailer - Brevo SMTP Config Missing in Local .env]');
+    console.log(`TO:      ${options.to || options.email}`);
+    console.log(`SUBJECT: ${options.subject}`);
+    console.log('-------------------------------------------------------------');
+    console.log(`TEXT:    ${options.text || 'HTML Email Body Provided'}`);
+    console.log('=============================================================\n');
+    return { success: true, localFallback: true };
+  }
+
+  const mailOptions = {
+    from: sender,
+    to: options.to || options.email,
     subject: options.subject,
-    text: options.message,
+    text: options.message || options.text,
     html: options.html,
   };
 
-  const info = await transporter.sendMail(message);
-
-  const previewUrl = nodemailer.getTestMessageUrl(info);
-  if (previewUrl) {
-    console.log(`\n📬 Ethereal Email Preview URL: ${previewUrl}\n`);
+  try {
+    const info = await mailTransporter.sendMail(mailOptions);
+    console.log(`✅ [Brevo SMTP] Email delivered to ${mailOptions.to} (Msg ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error(`❌ [Brevo SMTP Error] Failed to send email to ${mailOptions.to}:`, error.message);
+    throw error;
   }
-
-  return { messageId: info.messageId, previewUrl };
 };
 
 export default sendEmail;
