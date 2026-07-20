@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useCallback } from 'react';
-import axiosInstance from '../api/axiosInstance';
+import { loginUser, registerUser, getCurrentUser } from '../api/authApi';
 import toast from 'react-hot-toast';
 
 export const AuthContext = createContext(null);
@@ -39,16 +39,16 @@ export const AuthProvider = ({ children }) => {
 
   // ── Login ─────────────────────────────────────────────────────────────────
   const login = useCallback(async (email, password) => {
-    const response = await axiosInstance.post('/auth/login', { email, password });
-    const { token: jwt, user: userData } = response.data;
+    const data = await loginUser({ email, password });
+    const { token: jwt, user: userData } = data;
     persistAuth(userData, jwt);
     return userData;
   }, [persistAuth]);
 
   // ── Register ──────────────────────────────────────────────────────────────
   const register = useCallback(async (name, email, password) => {
-    const response = await axiosInstance.post('/auth/register', { name, email, password });
-    const { token: jwt, user: userData } = response.data;
+    const data = await registerUser({ name, email, password });
+    const { token: jwt, user: userData } = data;
     persistAuth(userData, jwt);
     return userData;
   }, [persistAuth]);
@@ -71,8 +71,8 @@ export const AuthProvider = ({ children }) => {
   // ── Refresh user from server ──────────────────────────────────────────────
   const refreshUser = useCallback(async () => {
     try {
-      const response = await axiosInstance.get('/auth/me');
-      const { user: userData } = response.data;
+      const data = await getCurrentUser();
+      const { user: userData } = data;
       updateUser(userData);
       return userData;
     } catch {

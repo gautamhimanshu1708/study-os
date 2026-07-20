@@ -1,14 +1,39 @@
 import axios from 'axios';
 
+/**
+ * Normalizes the backend base URL to ensure it always includes the `/api` prefix,
+ * supporting both local development and production (e.g. Render, Vercel).
+ */
+const getBaseURL = () => {
+  let envUrl = import.meta.env.VITE_API_URL;
+
+  // Fallback defaults if VITE_API_URL is not set
+  if (!envUrl || !envUrl.trim()) {
+    return import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://study-os-jqmf.onrender.com/api';
+  }
+
+  // Remove trailing slashes
+  envUrl = envUrl.trim().replace(/\/+$/, '');
+
+  // Guarantee `/api` prefix at the end of the base URL
+  if (!envUrl.endsWith('/api')) {
+    envUrl = `${envUrl}/api`;
+  }
+
+  return envUrl;
+};
+
+export const API_BASE_URL = getBaseURL();
+
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000,
+  timeout: 20000,
 });
 
-// Request interceptor — attach JWT token
+// Request Interceptor — attach JWT authorization token if present
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('studyos_token');
@@ -20,14 +45,13 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor — handle 401 globally
+// Response Interceptor — handle 401 Unauthorized globally
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('studyos_token');
       localStorage.removeItem('studyos_user');
-      // Redirect to login if not already there
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }

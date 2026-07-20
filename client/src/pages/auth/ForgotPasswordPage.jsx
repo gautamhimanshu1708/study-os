@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Zap, ArrowLeft, CheckCircle, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axiosInstance from '../../api/axiosInstance';
+import { forgotPassword } from '../../api/authApi';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 
@@ -26,7 +26,7 @@ const ForgotPasswordPage = () => {
     setLoading(true);
 
     try {
-      await axiosInstance.post('/auth/forgot-password', { email });
+      await forgotPassword(email);
       setSent(true);
       toast.success('Reset instructions sent!');
     } catch {

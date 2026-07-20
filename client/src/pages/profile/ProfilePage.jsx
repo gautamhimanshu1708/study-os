@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { User, Mail, Calendar, Shield, Edit3, Check, X, Camera, Flame, BookOpen, Clock, Target, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuth from '../../hooks/useAuth';
-import axiosInstance from '../../api/axiosInstance';
+import { updateUserProfile } from '../../api/authApi';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 
@@ -71,8 +71,8 @@ const ProfilePage = () => {
     }
     setSaving(true);
     try {
-      const res = await axiosInstance.put('/auth/update-profile', { name: name.trim() });
-      updateUser(res.data.user);
+      const data = await updateUserProfile({ name: name.trim() });
+      updateUser(data.user);
       toast.success('Profile updated!');
       setEditing(false);
     } catch (err) {
