@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Zap, ArrowLeft, CheckCircle2, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Mail, Zap, ArrowLeft, CheckCircle2, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { forgotPassword } from '../../api/authApi';
 import Input from '../../components/ui/Input';
@@ -42,9 +42,9 @@ const ForgotPasswordPage = () => {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-primary-600/15 to-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-md animate-fade-in relative z-10 my-auto py-6">
-        {/* StudyOS SaaS Header Logo */}
+        {/* StudyOS Logo Header */}
         <div className="flex flex-col items-center mb-8 text-center">
-          <Link to="/" className="inline-flex items-center gap-3 group focus:outline-none mb-3">
+          <Link to="/" className="inline-flex items-center gap-3 group focus:outline-none">
             <div className="w-12 h-12 rounded-2xl bg-gradient-brand flex items-center justify-center shadow-lg shadow-primary-500/25 group-hover:scale-105 transition-transform duration-300 border border-white/20">
               <Zap size={24} className="text-white fill-white" />
             </div>
@@ -52,9 +52,6 @@ const ForgotPasswordPage = () => {
               StudyOS
             </span>
           </Link>
-          <p className="text-xs font-medium text-text-muted uppercase tracking-widest flex items-center gap-1.5">
-            <ShieldCheck size={13} className="text-primary-400" /> Account Recovery
-          </p>
         </div>
 
         {/* Glassmorphic Auth Card */}
@@ -129,13 +126,7 @@ const ForgotPasswordPage = () => {
             </div>
           )}
 
-          <div className="relative my-6 text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border/80" />
-            </div>
-          </div>
-
-          <div className="text-center">
+          <div className="text-center mt-6 pt-5 border-t border-border/60">
             <Link
               to="/login"
               className="inline-flex items-center gap-2 text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors"

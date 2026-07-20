@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, Zap, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuth from '../../hooks/useAuth';
 import Input from '../../components/ui/Input';
@@ -97,9 +97,9 @@ const SignupPage = () => {
       <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-violet-500/10 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="w-full max-w-md animate-fade-in relative z-10 my-auto py-6">
-        {/* StudyOS SaaS Header Logo */}
+        {/* StudyOS Logo Header */}
         <div className="flex flex-col items-center mb-8 text-center">
-          <Link to="/" className="inline-flex items-center gap-3 group focus:outline-none mb-3">
+          <Link to="/" className="inline-flex items-center gap-3 group focus:outline-none">
             <div className="w-12 h-12 rounded-2xl bg-gradient-brand flex items-center justify-center shadow-lg shadow-primary-500/25 group-hover:scale-105 transition-transform duration-300 border border-white/20">
               <Zap size={24} className="text-white fill-white" />
             </div>
@@ -107,9 +107,6 @@ const SignupPage = () => {
               StudyOS
             </span>
           </Link>
-          <p className="text-xs font-medium text-text-muted uppercase tracking-widest flex items-center gap-1.5">
-            <ShieldCheck size={13} className="text-primary-400" /> Apple-Inspired Productivity Engine
-          </p>
         </div>
 
         {/* Glassmorphic Auth Card */}
@@ -222,18 +219,8 @@ const SignupPage = () => {
             </Button>
           </form>
 
-          {/* Clean SaaS Divider */}
-          <div className="relative my-6 text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border/80" />
-            </div>
-            <span className="relative px-3 bg-base-900/90 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-              Or
-            </span>
-          </div>
-
           {/* Footer Link */}
-          <div className="text-center">
+          <div className="text-center mt-6 pt-5 border-t border-border/60">
             <p className="text-xs text-text-secondary">
               Already have an account?{' '}
               <Link

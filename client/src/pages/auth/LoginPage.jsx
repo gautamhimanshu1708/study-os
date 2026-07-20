@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, Zap, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuth from '../../hooks/useAuth';
 import Input from '../../components/ui/Input';
@@ -61,14 +61,14 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 relative overflow-hidden bg-base-950 text-text-primary">
-      {/* Subtle Ambient Apple-Style Background Gradients */}
+      {/* Background Gradients */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-primary-600/15 to-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-accent-500/10 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="w-full max-w-md animate-fade-in relative z-10 my-auto py-6">
-        {/* StudyOS SaaS Header Logo */}
+        {/* StudyOS Logo Header */}
         <div className="flex flex-col items-center mb-8 text-center">
-          <Link to="/" className="inline-flex items-center gap-3 group focus:outline-none mb-3">
+          <Link to="/" className="inline-flex items-center gap-3 group focus:outline-none">
             <div className="w-12 h-12 rounded-2xl bg-gradient-brand flex items-center justify-center shadow-lg shadow-primary-500/25 group-hover:scale-105 transition-transform duration-300 border border-white/20">
               <Zap size={24} className="text-white fill-white" />
             </div>
@@ -76,9 +76,6 @@ const LoginPage = () => {
               StudyOS
             </span>
           </Link>
-          <p className="text-xs font-medium text-text-muted uppercase tracking-widest flex items-center gap-1.5">
-            <ShieldCheck size={13} className="text-primary-400" /> Apple-Inspired Productivity Engine
-          </p>
         </div>
 
         {/* Glassmorphic Auth Card */}
@@ -88,7 +85,7 @@ const LoginPage = () => {
               Sign in to StudyOS
             </h1>
             <p className="text-xs text-text-secondary mt-1.5">
-              Enter your credentials to access your dashboard & analytics
+              Enter your credentials to access your account
             </p>
           </div>
 
@@ -150,18 +147,8 @@ const LoginPage = () => {
             </Button>
           </form>
 
-          {/* Clean SaaS Divider */}
-          <div className="relative my-6 text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border/80" />
-            </div>
-            <span className="relative px-3 bg-base-900/90 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-              Or continue with
-            </span>
-          </div>
-
           {/* Footer Link */}
-          <div className="text-center">
+          <div className="text-center mt-6 pt-5 border-t border-border/60">
             <p className="text-xs text-text-secondary">
               Don&apos;t have an account?{' '}
               <Link
@@ -176,7 +163,7 @@ const LoginPage = () => {
 
         {/* Terms */}
         <p className="mt-6 text-center text-[11px] text-text-muted">
-          Protected by enterprise JWT security. By logging in, you agree to our{' '}
+          By logging in, you agree to our{' '}
           <span className="text-text-secondary hover:text-primary-400 cursor-pointer transition-colors">
             Terms of Service
           </span>{' '}
