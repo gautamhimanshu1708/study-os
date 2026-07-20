@@ -1,132 +1,38 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Play, Pause, RotateCcw, SkipForward, Clock, Settings2, Flame, BarChart2, CheckCircle2 } from 'lucide-react';
-import { logStudySession, getStudySessionStats } from '../../api/studySessionApi';
-import { getConsistencyStats } from '../../api/consistencyApi';
-import toast from 'react-hot-toast';
-
-const MODES = {
-  '25/5':    { study: 25, break: 5, label: '25/5' },
-  '50/10':   { study: 50, break: 10, label: '50/10' },
-  'Custom':  { study: 25, break: 5, label: 'Custom' },
-};
+import { useTimer } from '../../context/TimerContext';
 
 export default function FocusTimerPage() {
-  const [mode, setMode] = useState('25/5');
-  const [isStudyPhase, setIsStudyPhase] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(MODES['25/5'].study * 60);
-  const [isActive, setIsActive] = useState(false);
-  const [customStudy, setCustomStudy] = useState(25);
-  const [customBreak, setCustomBreak] = useState(5);
+  const {
+    mode,
+    MODES,
+    isStudyPhase,
+    isActive,
+    timeLeft,
+    totalDuration,
+    customStudy,
+    customBreak,
+    stats,
+    streak,
+    toggleTimer,
+    resetTimer,
+    skipPhase,
+    changeMode,
+    updateCustomSettings,
+    formatTime,
+  } = useTimer();
+
   const [showSettings, setShowSettings] = useState(false);
-  const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [tempStudy, setTempStudy] = useState(customStudy);
+  const [tempBreak, setTempBreak] = useState(customBreak);
 
-  // Stats
-  const [stats, setStats] = useState(null);
-  const [streak, setStreak] = useState({ current: 0, best: 0 });
-
-  const timerRef = useRef(null);
-
-  const totalTime = isStudyPhase
-    ? (mode === 'Custom' ? customStudy : MODES[mode].study) * 60
-    : (mode === 'Custom' ? customBreak : MODES[mode].break) * 60;
-
-  const fetchStats = async () => {
-    try {
-      const [sessionRes, streakRes] = await Promise.all([
-        getStudySessionStats(),
-        getConsistencyStats(),
-      ]);
-      setStats(sessionRes.data || null);
-      setStreak({
-        current: streakRes.data?.currentStreak || 0,
-        best: streakRes.data?.bestStreak || 0,
-      });
-    } catch (err) {
-      console.error('Failed to load focus stats', err);
-    }
+  const handleApplySettings = () => {
+    updateCustomSettings(tempStudy, tempBreak);
+    changeMode('Custom');
+    setShowSettings(false);
   };
 
-  useEffect(() => { fetchStats(); }, []);
-
-  useEffect(() => {
-    if (isActive && timeLeft > 0) {
-      timerRef.current = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
-    } else if (isActive && timeLeft === 0) {
-      handlePhaseComplete();
-    }
-    return () => clearInterval(timerRef.current);
-  }, [isActive, timeLeft]);
-
-  const handlePhaseComplete = async () => {
-    clearInterval(timerRef.current);
-    if (isStudyPhase) {
-      const endTime = new Date();
-      const startTime = sessionStartTime || new Date(endTime.getTime() - totalTime * 1000);
-      const durationMins = Math.round(totalTime / 60);
-      try {
-        await logStudySession({
-          duration: durationMins,
-          studyStartTime: startTime.toISOString(),
-          studyEndTime: endTime.toISOString(),
-          pomodoroMode: mode === '25/5' ? 'Classic' : mode === '50/10' ? 'Deep Work' : 'Custom',
-          subject: 'General Study',
-        });
-        toast.success(`Session complete — ${durationMins} min logged`);
-        fetchStats(); // refresh stats
-      } catch {
-        toast.error('Failed to log session');
-      }
-      setIsStudyPhase(false);
-      setTimeLeft((mode === 'Custom' ? customBreak : MODES[mode].break) * 60);
-      setIsActive(true);
-    } else {
-      toast.success('Break over — ready to focus?');
-      setIsStudyPhase(true);
-      setTimeLeft((mode === 'Custom' ? customStudy : MODES[mode].study) * 60);
-      setIsActive(false);
-    }
-  };
-
-  const toggleTimer = () => {
-    if (!isActive && isStudyPhase && timeLeft === totalTime) setSessionStartTime(new Date());
-    setIsActive(!isActive);
-  };
-
-  const resetTimer = () => {
-    setIsActive(false);
-    setIsStudyPhase(true);
-    setSessionStartTime(null);
-    setTimeLeft((mode === 'Custom' ? customStudy : MODES[mode].study) * 60);
-  };
-
-  const skipPhase = () => {
-    if (isStudyPhase) {
-      toast('Study phase skipped');
-      setIsStudyPhase(false);
-      setTimeLeft((mode === 'Custom' ? customBreak : MODES[mode].break) * 60);
-    } else {
-      toast('Break skipped');
-      setIsStudyPhase(true);
-      setTimeLeft((mode === 'Custom' ? customStudy : MODES[mode].study) * 60);
-    }
-    setIsActive(false);
-  };
-
-  const changeMode = (m) => {
-    setMode(m);
-    setIsActive(false);
-    setIsStudyPhase(true);
-    setSessionStartTime(null);
-    setTimeLeft(m === 'Custom' ? customStudy * 60 : MODES[m].study * 60);
-  };
-
-  const formatTime = (s) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-  };
-
-  const progress = totalTime > 0 ? ((totalTime - timeLeft) / totalTime) : 0;
+  const progress = totalDuration > 0 ? ((totalDuration - timeLeft) / totalDuration) : 0;
   const circumference = 2 * Math.PI * 120;
   const dashOffset = circumference * (1 - progress);
 
@@ -162,6 +68,7 @@ export default function FocusTimerPage() {
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="px-3 py-2 text-text-muted hover:text-text-primary transition-colors"
+              title="Timer Settings"
             >
               <Settings2 size={18} />
             </button>
@@ -174,14 +81,33 @@ export default function FocusTimerPage() {
               <div className="flex gap-4 mb-3">
                 <div className="flex-1">
                   <label className="text-xs text-text-muted mb-1 block">Study (min)</label>
-                  <input type="number" value={customStudy} onChange={(e) => { const v = Math.max(1, parseInt(e.target.value) || 1); setCustomStudy(v); if (mode === 'Custom' && isStudyPhase) setTimeLeft(v * 60); }} className="w-full bg-surface-primary border border-border rounded-xl px-3 py-2 text-text-primary text-sm focus:outline-none focus:border-primary-500" />
+                  <input
+                    type="number"
+                    min="1"
+                    max="180"
+                    value={tempStudy}
+                    onChange={(e) => setTempStudy(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full bg-surface-primary border border-border rounded-xl px-3 py-2 text-text-primary text-sm focus:outline-none focus:border-primary-500"
+                  />
                 </div>
                 <div className="flex-1">
                   <label className="text-xs text-text-muted mb-1 block">Break (min)</label>
-                  <input type="number" value={customBreak} onChange={(e) => { const v = Math.max(1, parseInt(e.target.value) || 1); setCustomBreak(v); if (mode === 'Custom' && !isStudyPhase) setTimeLeft(v * 60); }} className="w-full bg-surface-primary border border-border rounded-xl px-3 py-2 text-text-primary text-sm focus:outline-none focus:border-primary-500" />
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={tempBreak}
+                    onChange={(e) => setTempBreak(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full bg-surface-primary border border-border rounded-xl px-3 py-2 text-text-primary text-sm focus:outline-none focus:border-primary-500"
+                  />
                 </div>
               </div>
-              <button onClick={() => { setShowSettings(false); changeMode('Custom'); }} className="w-full py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-xl text-sm font-medium transition-colors">Apply</button>
+              <button
+                onClick={handleApplySettings}
+                className="w-full py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-xl text-sm font-medium transition-colors"
+              >
+                Apply Custom Timer
+              </button>
             </div>
           )}
 
@@ -206,15 +132,20 @@ export default function FocusTimerPage() {
               <span className={`text-xs font-semibold uppercase tracking-[0.25em] mt-2 ${isStudyPhase ? 'text-primary-400' : 'text-emerald-400'}`}>
                 {isStudyPhase ? 'Focus' : 'Break'}
               </span>
-              <span className="text-[11px] text-text-muted mt-1">{MODES[mode].label} Mode</span>
+              <span className="text-[11px] text-text-muted mt-1">{MODES[mode]?.label}</span>
             </div>
           </div>
 
           {/* Controls */}
           <div className="flex items-center gap-6">
-            <button onClick={resetTimer} className="p-3 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-full transition-all" title="Reset">
+            <button
+              onClick={resetTimer}
+              className="p-3 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-full transition-all"
+              title="Reset"
+            >
               <RotateCcw size={24} />
             </button>
+
             <button
               onClick={toggleTimer}
               className={`p-5 rounded-full shadow-glow transition-all duration-300 transform hover:scale-105 ${
@@ -222,10 +153,16 @@ export default function FocusTimerPage() {
                   ? 'bg-surface-secondary text-primary-400 border border-primary-500/30'
                   : 'bg-primary-600 text-white hover:bg-primary-500'
               }`}
+              title={isActive ? 'Pause' : 'Start'}
             >
               {isActive ? <Pause size={32} className="fill-current" /> : <Play size={32} className="fill-current ml-1" />}
             </button>
-            <button onClick={skipPhase} className="p-3 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-full transition-all" title="Skip">
+
+            <button
+              onClick={skipPhase}
+              className="p-3 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-full transition-all"
+              title="Skip"
+            >
               <SkipForward size={24} />
             </button>
           </div>

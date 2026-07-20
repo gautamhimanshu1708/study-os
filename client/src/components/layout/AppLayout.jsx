@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
+import FloatingTimer from '../timer/FloatingTimer';
 
 /**
  * Main app shell: sidebar on desktop, bottom nav on mobile.
@@ -8,7 +9,7 @@ import BottomNav from './BottomNav';
  */
 const AppLayout = () => {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen relative">
       {/* Desktop Sidebar */}
       <Sidebar />
 
@@ -20,6 +21,9 @@ const AppLayout = () => {
           <Outlet />
         </div>
       </main>
+
+      {/* Global Floating Mini Timer Overlay */}
+      <FloatingTimer />
 
       {/* Mobile Bottom Nav */}
       <BottomNav />

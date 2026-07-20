@@ -15,6 +15,8 @@ import { getGoals } from '../../api/goalApi';
 import { getDeadlines } from '../../api/deadlineApi';
 import { getCourses } from '../../api/courseApi';
 
+import { useTimer } from '../../context/TimerContext';
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // XP & HELPER UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -49,18 +51,27 @@ const getDaysLeft = (dateStr) => {
   return { text: `${diffDays}d left`, isOverdue: false, isToday: false };
 };
 
-const TIMER_MODES = {
-  POMODORO: { name: '25/5 Classic', workMins: 25, breakMins: 5 },
-  DEEP_WORK: { name: '50/10 Deep', workMins: 50, breakMins: 10 },
-  CUSTOM:    { name: 'Custom',        workMins: 30, breakMins: 5 },
-};
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD COMPONENT (65 / 35 LAYOUT)
 // ═══════════════════════════════════════════════════════════════════════════════
 const DashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Global Timer Context
+  const {
+    mode,
+    MODES,
+    isStudyPhase,
+    isActive,
+    timeLeft,
+    totalDuration,
+    toggleTimer,
+    resetTimer,
+    skipPhase,
+    changeMode,
+    formatTime,
+  } = useTimer();
 
   // Core App Data States
   const [studyStats, setStudyStats] = useState(null);
@@ -71,16 +82,6 @@ const DashboardPage = () => {
   const [deadlines, setDeadlines] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Focus Timer States
-  const [modeKey, setModeKey] = useState('POMODORO');
-  const [customWork, setCustomWork] = useState(30);
-  const [customBreak, setCustomBreak] = useState(5);
-  const [isBreak, setIsBreak] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(25 * 60);
-  const [isActive, setIsActive] = useState(false);
-  const timerRef = useRef(null);
-  const startTimeRef = useRef(null);
 
   // ── Fetch Dashboard Data ──────────────────────────────────────────────────
   const fetchDashboardData = useCallback(async () => {
@@ -112,77 +113,6 @@ const DashboardPage = () => {
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
-
-  // ── Focus Timer Controller Logic ──────────────────────────────────────────
-  const currentWorkDuration = modeKey === 'CUSTOM' ? customWork : TIMER_MODES[modeKey].workMins;
-  const currentBreakDuration = modeKey === 'CUSTOM' ? customBreak : TIMER_MODES[modeKey].breakMins;
-  const totalPhaseSeconds = (isBreak ? currentBreakDuration : currentWorkDuration) * 60;
-
-  // Reset timer on mode/phase change
-  useEffect(() => {
-    if (!isActive) {
-      setSecondsLeft((isBreak ? currentBreakDuration : currentWorkDuration) * 60);
-    }
-  }, [modeKey, customWork, customBreak, isBreak, currentWorkDuration, currentBreakDuration, isActive]);
-
-  // Save session to backend
-  const handleSessionComplete = useCallback(async () => {
-    if (!isBreak) {
-      try {
-        const todayStr = new Date().toISOString().split('T')[0];
-        await logStudySession({
-          duration: currentWorkDuration,
-          sessionType: TIMER_MODES[modeKey]?.name || 'Pomodoro',
-          startTime: startTimeRef.current || new Date().toISOString(),
-          endTime: new Date().toISOString(),
-          studyDate: todayStr,
-        });
-        toast.success(`🎉 Focused session of ${currentWorkDuration} mins completed! XP added.`);
-        fetchDashboardData();
-      } catch (err) {
-        console.error('Failed to save study session:', err);
-        toast.error('Session complete, but failed to sync online.');
-      }
-    } else {
-      toast.success('☕ Break time over! Ready for another focus round?');
-    }
-    setIsBreak((prev) => !prev);
-    setIsActive(false);
-  }, [isBreak, currentWorkDuration, modeKey, fetchDashboardData]);
-
-  useEffect(() => {
-    if (isActive) {
-      if (!startTimeRef.current) startTimeRef.current = new Date().toISOString();
-      timerRef.current = setInterval(() => {
-        setSecondsLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            handleSessionComplete();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [isActive, handleSessionComplete]);
-
-  const toggleTimer = () => setIsActive(!isActive);
-
-  const resetTimer = () => {
-    setIsActive(false);
-    startTimeRef.current = null;
-    setSecondsLeft((isBreak ? currentBreakDuration : currentWorkDuration) * 60);
-  };
-
-  const skipBreak = () => {
-    setIsBreak(false);
-    setIsActive(false);
-    startTimeRef.current = null;
-    setSecondsLeft(currentWorkDuration * 60);
-  };
 
   // Toggle task status right from Dashboard
   const handleToggleTask = async (taskId) => {
@@ -228,16 +158,13 @@ const DashboardPage = () => {
     return { dateStr, level, mins: dayMins };
   });
 
-  const minutes = Math.floor(secondsLeft / 60);
-  const seconds = secondsLeft % 60;
-  const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  const strokeDashoffset = (2 * Math.PI * 90) * (1 - secondsLeft / totalPhaseSeconds);
+  const strokeDashoffset = (2 * Math.PI * 90) * (1 - (totalDuration > 0 ? (totalDuration - timeLeft) / totalDuration : 0));
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-4">
         <div className="w-10 h-10 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm font-semibold text-text-secondary">Loading Apple-inspired StudyOS space...</p>
+        <p className="text-sm font-semibold text-text-secondary">Loading StudyOS space...</p>
       </div>
     );
   }
@@ -304,28 +231,25 @@ const DashboardPage = () => {
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
-                      Focus Center <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-500/15 text-primary-400 font-bold border border-primary-500/25">HERO</span>
+                      Focus Center <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-500/15 text-primary-400 font-bold border border-primary-500/25">LIVE</span>
                     </h2>
-                    <p className="text-xs text-text-muted">Apple Vision & Raycast inspired centerpiece</p>
+                    <p className="text-xs text-text-muted">Real-time productivity focus system</p>
                   </div>
                 </div>
 
                 {/* Timer Mode Pills */}
                 <div className="flex items-center gap-1.5 bg-surface-secondary p-1 rounded-2xl border border-border">
-                  {Object.keys(TIMER_MODES).map((key) => (
+                  {Object.keys(MODES).map((key) => (
                     <button
                       key={key}
-                      onClick={() => {
-                        setModeKey(key);
-                        setIsActive(false);
-                      }}
+                      onClick={() => changeMode(key)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                        modeKey === key
+                        mode === key
                           ? 'bg-primary-500 text-white shadow-md shadow-primary-500/25'
                           : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
                       }`}
                     >
-                      {TIMER_MODES[key].name}
+                      {MODES[key]?.label || key}
                     </button>
                   ))}
                 </div>
@@ -348,7 +272,7 @@ const DashboardPage = () => {
                       cx="100"
                       cy="100"
                       r="90"
-                      className={`fill-none transition-all duration-1000 ease-linear ${isBreak ? 'stroke-emerald-400' : 'stroke-primary-500'}`}
+                      className={`fill-none transition-all duration-1000 ease-linear ${!isStudyPhase ? 'stroke-emerald-400' : 'stroke-primary-500'}`}
                       strokeWidth="10"
                       strokeDasharray={`${2 * Math.PI * 90}`}
                       strokeDashoffset={strokeDashoffset}
@@ -359,15 +283,15 @@ const DashboardPage = () => {
                   {/* Inner Timer Content */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
                     <span className={`text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full mb-1 ${
-                      isBreak ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-primary-500/15 text-primary-400 border border-primary-500/30'
+                      !isStudyPhase ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-primary-500/15 text-primary-400 border border-primary-500/30'
                     }`}>
-                      {isBreak ? '☕ Break Time' : isActive ? '⚡ In Focus' : 'Ready'}
+                      {!isStudyPhase ? '☕ Break Time' : isActive ? '⚡ In Focus' : 'Ready'}
                     </span>
                     <h3 className="text-4xl md:text-5xl font-extrabold text-text-primary tracking-wider font-mono my-1">
-                      {formattedTime}
+                      {formatTime(timeLeft)}
                     </h3>
                     <p className="text-xs text-text-muted font-medium">
-                      {isBreak ? `${currentBreakDuration} min rest phase` : `${currentWorkDuration} min deep session`}
+                      {!isStudyPhase ? 'Rest phase' : 'Deep focus session'}
                     </p>
                   </div>
                 </div>
@@ -394,9 +318,9 @@ const DashboardPage = () => {
                     <RotateCcw size={18} />
                   </button>
 
-                  {isBreak && (
+                  {!isStudyPhase && (
                     <button
-                      onClick={skipBreak}
+                      onClick={skipPhase}
                       className="px-3 py-3 rounded-2xl bg-surface-secondary border border-border text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors flex items-center gap-1.5"
                     >
                       <SkipForward size={16} /> Skip Break
