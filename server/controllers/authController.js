@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import { validationResult } from 'express-validator';
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
+import sendEmail from '../utils/sendEmail.js';
+import { getPasswordResetEmailHtml } from '../utils/emailTemplates.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -138,7 +140,7 @@ export const forgotPassword = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      // Don't reveal if email exists
+      // Don't reveal if email exists for security
       return res.status(200).json({
         success: true,
         message: 'If that email is registered, a reset link has been sent.',
@@ -156,14 +158,40 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
     await user.save({ validateBeforeSave: false });
 
-    // In production: send email with resetToken link
-    // For development: return raw token in response
-    res.status(200).json({
-      success: true,
-      message: 'Password reset token generated',
-      // Remove this in production!
-      devResetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined,
-    });
+    // Send email with reset link
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const resetUrl = `${clientUrl}/reset-password/${resetToken}`;
+
+    const html = getPasswordResetEmailHtml({ resetUrl, userName: user.name });
+    const message = `You requested a password reset for StudyOS. Click this link to set a new password: ${resetUrl}`;
+
+    try {
+      const mailResult = await sendEmail({
+        email: user.email,
+        subject: 'StudyOS - Reset Your Password',
+        message,
+        html,
+        resetUrl,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Password reset link has been sent to your email.',
+        devResetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined,
+        devResetUrl: process.env.NODE_ENV === 'development' ? resetUrl : undefined,
+        previewUrl: mailResult?.previewUrl || undefined,
+      });
+    } catch (mailErr) {
+      console.error('Failed to send reset email:', mailErr);
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      return res.status(500).json({
+        success: false,
+        message: 'Email could not be sent. Please check SMTP settings.',
+      });
+    }
   } catch (error) {
     console.error('ForgotPassword error:', error);
     res.status(500).json({ success: false, message: 'Server error' });

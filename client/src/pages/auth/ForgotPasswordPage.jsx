@@ -12,6 +12,9 @@ const ForgotPasswordPage = () => {
   const [loading, setLoading]     = useState(false);
   const [sent, setSent]           = useState(false);
 
+  const [devResetUrl, setDevResetUrl] = useState('');
+  const [previewUrl, setPreviewUrl]   = useState('');
+
   const validate = () => {
     if (!email) return 'Email is required';
     if (!/\S+@\S+\.\S+/.test(email)) return 'Enter a valid email address';
@@ -26,11 +29,14 @@ const ForgotPasswordPage = () => {
     setLoading(true);
 
     try {
-      await forgotPassword(email);
+      const res = await forgotPassword(email);
+      if (res.devResetUrl) setDevResetUrl(res.devResetUrl);
+      if (res.previewUrl) setPreviewUrl(res.previewUrl);
       setSent(true);
-      toast.success('Reset instructions sent!');
-    } catch {
-      toast.error('Something went wrong. Please try again.');
+      toast.success('Reset instructions processed!');
+    } catch (error) {
+      const msg = error.response?.data?.message || 'Something went wrong. Please try again.';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -103,18 +109,47 @@ const ForgotPasswordPage = () => {
               </form>
             </>
           ) : (
-            <div className="text-center py-2">
-              <div className="w-14 h-14 bg-success/15 border border-success/25 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="text-center py-2 space-y-3">
+              <div className="w-14 h-14 bg-success/15 border border-success/25 rounded-2xl flex items-center justify-center mx-auto mb-2">
                 <CheckCircle2 size={26} className="text-success" />
               </div>
-              <h2 className="text-xl font-bold text-text-primary mb-1.5">Check your inbox</h2>
-              <p className="text-xs text-text-secondary mb-2">
-                We&apos;ve sent reset instructions to:
+              <h2 className="text-xl font-bold text-text-primary">Check your inbox</h2>
+              <p className="text-xs text-text-secondary">
+                We&apos;ve sent password reset instructions to:
               </p>
-              <p className="text-xs font-semibold text-primary-400 mb-6 break-all px-3 py-1.5 rounded-lg bg-base-800 border border-border inline-block">
+              <p className="text-xs font-semibold text-primary-400 break-all px-3 py-1.5 rounded-lg bg-base-800 border border-border inline-block">
                 {email}
               </p>
-              <p className="text-[11px] text-text-muted mb-6">
+
+              {/* Development / Ethereal Test Quick Link */}
+              {devResetUrl && (
+                <div className="mt-4 p-3 bg-primary-500/10 border border-primary-500/20 rounded-xl text-left">
+                  <p className="text-[11px] font-bold text-primary-400 uppercase tracking-wider mb-1">
+                    ⚡ Developer Reset Link
+                  </p>
+                  <a
+                    href={devResetUrl}
+                    className="text-xs font-semibold text-primary-300 hover:text-white underline break-all"
+                  >
+                    Click here to reset password directly
+                  </a>
+                </div>
+              )}
+
+              {previewUrl && (
+                <div className="mt-2 text-center">
+                  <a
+                    href={previewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-violet-400 hover:underline"
+                  >
+                    View generated test email in browser ↗
+                  </a>
+                </div>
+              )}
+
+              <p className="text-[11px] text-text-muted pt-2">
                 Didn&apos;t receive the email? Check your spam folder or{' '}
                 <button
                   onClick={() => setSent(false)}

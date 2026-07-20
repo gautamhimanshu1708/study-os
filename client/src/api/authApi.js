@@ -24,6 +24,11 @@ export const forgotPassword = async (email) => {
   return response.data;
 };
 
+export const resetPassword = async (token, password) => {
+  const response = await axiosInstance.put(`/auth/reset-password/${token}`, { password });
+  return response.data;
+};
+
 export const updateUserProfile = async (profileData) => {
   const response = await axiosInstance.put('/auth/update-profile', profileData);
   return response.data;

@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import LoginPage          from './pages/auth/LoginPage';
 import SignupPage         from './pages/auth/SignupPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage  from './pages/auth/ResetPasswordPage';
 
 // App pages
 import DashboardPage   from './pages/dashboard/DashboardPage';
@@ -47,9 +48,10 @@ const App = () => {
 
       <Routes>
         {/* Public routes */}
-        <Route path="/login"           element={<LoginPage />} />
-        <Route path="/signup"          element={<SignupPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/login"                  element={<LoginPage />} />
+        <Route path="/signup"                 element={<SignupPage />} />
+        <Route path="/forgot-password"        element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
         {/* Protected app routes */}
         <Route
