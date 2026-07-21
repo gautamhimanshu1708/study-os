@@ -28,7 +28,8 @@ export const register = async (req, res) => {
     return res.status(400).json({ success: false, errors: errors.array() });
   }
 
-  const { name, email, password, securityQuestion, securityAnswer } = req.body;
+  const { name, password, securityQuestion, securityAnswer } = req.body;
+  const email = req.body.email?.trim().toLowerCase();
 
   if (!securityQuestion || !securityAnswer) {
     return res.status(400).json({
@@ -68,7 +69,8 @@ export const login = async (req, res) => {
     return res.status(400).json({ success: false, errors: errors.array() });
   }
 
-  const { email, password } = req.body;
+  const { password } = req.body;
+  const email = req.body.email?.trim().toLowerCase();
 
   try {
     const user = await User.findOne({ email }).select('+password');
