@@ -76,11 +76,6 @@ const CourseModal = ({ isOpen, onClose, onSave, initialData = null }) => {
       return;
     }
 
-    if (formData.courseLink && !formData.courseLink.startsWith('http://') && !formData.courseLink.startsWith('https://')) {
-      toast.error('Course link must start with http:// or https://');
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -185,7 +180,7 @@ const CourseModal = ({ isOpen, onClose, onSave, initialData = null }) => {
               <ExternalLink size={14} className="text-emerald-400" /> Course Website Link
             </label>
             <input
-              type="url"
+              type="text"
               name="courseLink"
               value={formData.courseLink}
               onChange={handleChange}

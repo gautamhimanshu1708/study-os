@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Clock, Target, CheckSquare, Flame, Award, Zap, Timer,
@@ -8,8 +8,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuth from '../../hooks/useAuth';
-import { getStudySessionStats, logStudySession, getStudySessions } from '../../api/studySessionApi';
-import { getConsistencyStats } from '../../api/consistencyApi';
+import { getStudySessions } from '../../api/studySessionApi';
 import { getTasks, toggleTaskStatus } from '../../api/plannerApi';
 import { getGoals } from '../../api/goalApi';
 import { getDeadlines } from '../../api/deadlineApi';
@@ -58,7 +57,7 @@ const DashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Global Timer Context
+  // Global Timer Context — single source of truth for study stats & streak
   const {
     mode,
     MODES,
@@ -66,29 +65,31 @@ const DashboardPage = () => {
     isActive,
     timeLeft,
     totalDuration,
+    stats: studyStats,
+    streak: timerStreak,
     toggleTimer,
     resetTimer,
     skipPhase,
     changeMode,
     formatTime,
+    fetchStats,
   } = useTimer();
 
-  // Core App Data States
-  const [studyStats, setStudyStats] = useState(null);
+  // Derive streakData from global TimerContext
+  const streakData = { currentStreak: timerStreak.current, bestStreak: timerStreak.best };
+
+  // Core App Data States (dashboard-specific data only)
   const [recentSessions, setRecentSessions] = useState([]);
-  const [streakData, setStreakData] = useState({ currentStreak: 0, bestStreak: 0 });
   const [tasks, setTasks] = useState([]);
   const [goals, setGoals] = useState([]);
   const [deadlines, setDeadlines] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ── Fetch Dashboard Data ──────────────────────────────────────────────────
+  // ── Fetch Dashboard Data (non-study-stats data only) ───────────────────
   const fetchDashboardData = useCallback(async () => {
     try {
-      const [sessionRes, streakRes, taskRes, goalRes, deadlineRes, courseRes, allSessionsRes] = await Promise.allSettled([
-        getStudySessionStats(),
-        getConsistencyStats(),
+      const [taskRes, goalRes, deadlineRes, courseRes, allSessionsRes] = await Promise.allSettled([
         getTasks(),
         getGoals(),
         getDeadlines(),
@@ -96,8 +97,6 @@ const DashboardPage = () => {
         getStudySessions(),
       ]);
 
-      if (sessionRes.status === 'fulfilled') setStudyStats(sessionRes.value.data);
-      if (streakRes.status === 'fulfilled') setStreakData(streakRes.value.data || { currentStreak: 0, bestStreak: 0 });
       if (taskRes.status === 'fulfilled') setTasks(taskRes.value.data || []);
       if (goalRes.status === 'fulfilled') setGoals(goalRes.value.data || []);
       if (deadlineRes.status === 'fulfilled') setDeadlines(deadlineRes.value.data || []);

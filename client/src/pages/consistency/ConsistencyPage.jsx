@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getConsistencyLogs, getConsistencyStats, logDailyActivity } from '../../api/consistencyApi';
+import { useTimer } from '../../context/TimerContext';
 import DailyLogModal from './DailyLogModal';
 
 // GitHub Heatmap Color Mapping
@@ -20,6 +21,7 @@ const ConsistencyPage = () => {
   const [logsMap, setLogsMap] = useState({});
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { fetchStats: refreshGlobalStats } = useTimer();
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,13 +46,15 @@ const ConsistencyPage = () => {
 
       setLogsMap(map);
       setStats(statsRes.data || null);
+      // Refresh global timer stats for cross-page consistency
+      refreshGlobalStats();
     } catch (err) {
       console.error('Failed to fetch consistency data:', err);
       toast.error('Failed to load consistency tracker');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshGlobalStats]);
 
   useEffect(() => {
     fetchConsistencyData();

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAnalyticsSummary } from '../../api/analyticsApi';
+import { useTimer } from '../../context/TimerContext';
 
 // Recharts Custom Dark Glassmorphic Tooltip
 const CustomTooltip = ({ active, payload, label }) => {
@@ -34,19 +35,22 @@ const CustomTooltip = ({ active, payload, label }) => {
 const AnalyticsPage = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { fetchStats } = useTimer();
 
   const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       const res = await getAnalyticsSummary();
       setData(res.data || null);
+      // Also refresh global stats for consistency
+      fetchStats();
     } catch (err) {
       console.error('Failed to fetch analytics:', err);
       toast.error('Failed to load analytics dashboard');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchStats]);
 
   useEffect(() => {
     fetchAnalytics();

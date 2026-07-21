@@ -61,7 +61,6 @@ const App = () => {
             </ProtectedRoute>
           }
         >
-          <Route path="/dashboard font-sans" element={<DashboardPage />} />
           <Route path="/dashboard"         element={<DashboardPage />} />
           <Route path="/focus"             element={<FocusTimerPage />} />
           <Route path="/planner"           element={<PlannerPage />} />
@@ -69,7 +68,6 @@ const App = () => {
           <Route path="/goals"             element={<GoalPage />} />
           <Route path="/notes"             element={<NotesPage />} />
           <Route path="/deadlines"         element={<DeadlinesPage />} />
-          <Route path="/consistency font-sans" element={<ConsistencyPage />} />
           <Route path="/consistency"       element={<ConsistencyPage />} />
           <Route path="/analytics"         element={<AnalyticsPage />} />
           <Route path="/profile"           element={<ProfilePage />} />
