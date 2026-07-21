@@ -31,10 +31,12 @@ const calculateXP = (studyMins = 0, tasksCompleted = 0, goalsAchieved = 0, deadl
 };
 
 const formatHours = (h) => {
-  if (!h || h === 0) return '0h 0m';
-  const hrs = Math.floor(h);
-  const mins = Math.round((h - hrs) * 60);
-  return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+  if (h === undefined || h === null) return '0m';
+  const totalMins = Math.round(h * 60);
+  if (totalMins <= 0) return '0m';
+  const hrs = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  return hrs > 0 ? (mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`) : `${mins}m`;
 };
 
 const getDaysLeft = (dateStr) => {

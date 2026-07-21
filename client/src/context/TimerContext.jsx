@@ -68,6 +68,10 @@ export const TimerProvider = ({ children }) => {
   // Track the elapsed study time in real-time (in seconds) for live display
   const [liveStudySeconds, setLiveStudySeconds] = useState(0);
 
+  // High-precision tracking refs for live per-minute study logging
+  const activeStudySecondsRef = useRef(0);
+  const loggedSecondsRef = useRef(0);
+
   const timerRef = useRef(null);
   const autoCompleteHandledRef = useRef(false);
 
@@ -144,6 +148,44 @@ export const TimerProvider = ({ children }) => {
     }
   }, []);
 
+  // Live per-minute incremental session logger
+  const checkAndLogIncrementalSession = useCallback(async (isFinalOrPause = false, currentMode, currentIsStudyPhase) => {
+    if (!currentIsStudyPhase) return;
+
+    const unloggedSec = activeStudySecondsRef.current - loggedSecondsRef.current;
+    let minsToLog = 0;
+
+    if (isFinalOrPause) {
+      if (unloggedSec >= 30) {
+        minsToLog = Math.round(unloggedSec / 60);
+      }
+    } else {
+      if (unloggedSec >= 60) {
+        minsToLog = Math.floor(unloggedSec / 60);
+      }
+    }
+
+    if (minsToLog > 0) {
+      loggedSecondsRef.current += minsToLog * 60;
+      const endTime = new Date();
+      const startTime = new Date(endTime.getTime() - minsToLog * 60 * 1000);
+      const pomodoroModeStr = currentMode === '25/5' ? 'Classic' : currentMode === '50/10' ? 'Deep Work' : 'Custom';
+
+      try {
+        await logStudySession({
+          duration: minsToLog,
+          studyStartTime: startTime.toISOString(),
+          studyEndTime: endTime.toISOString(),
+          pomodoroMode: pomodoroModeStr,
+          subject: 'General Study',
+        });
+        await fetchStats();
+      } catch (err) {
+        console.error('Failed to log incremental session:', err);
+      }
+    }
+  }, [fetchStats]);
+
   // Complete Focus / Break Session
   const handlePhaseComplete = useCallback(async (completedMode, completedIsStudyPhase, completedSessionStartTime, completedTotalDuration, completedCustomBreak, completedCustomStudy) => {
     setIsActive(false);
@@ -152,26 +194,14 @@ export const TimerProvider = ({ children }) => {
     playNotificationSound();
 
     if (completedIsStudyPhase) {
-      const endTime = new Date();
-      const startTime = completedSessionStartTime ? new Date(completedSessionStartTime) : new Date(endTime.getTime() - completedTotalDuration * 1000);
-      const durationMins = Math.max(1, Math.round(completedTotalDuration / 60));
+      // Log any remaining study seconds
+      await checkAndLogIncrementalSession(true, completedMode, completedIsStudyPhase);
+      activeStudySecondsRef.current = 0;
+      loggedSecondsRef.current = 0;
 
-      try {
-        await logStudySession({
-          duration: durationMins,
-          studyStartTime: startTime.toISOString(),
-          studyEndTime: endTime.toISOString(),
-          pomodoroMode: completedMode === '25/5' ? 'Classic' : completedMode === '50/10' ? 'Deep Work' : 'Custom',
-          subject: 'General Study',
-        });
-        toast.success(`🎉 Focus session complete! ${durationMins} min logged & XP added.`);
-        sendBrowserNotification('🎉 Focus Session Complete!', `Awesome work! You logged ${durationMins} minutes of focus.`);
-        // Refresh stats globally — all subscribed components will update
-        await fetchStats();
-      } catch (err) {
-        console.error('Failed to log session:', err);
-        toast.error('Session ended, but failed to sync online.');
-      }
+      toast.success(`🎉 Focus session complete! Logged & XP added.`);
+      sendBrowserNotification('🎉 Focus Session Complete!', `Awesome work! Focus round completed.`);
+      await fetchStats();
 
       setIsStudyPhase(false);
       const nextBreakDuration = (completedMode === 'Custom' ? completedCustomBreak : MODES[completedMode].break) * 60;
@@ -184,7 +214,7 @@ export const TimerProvider = ({ children }) => {
       setTimeLeft(nextStudyDuration);
     }
     setSessionStartTime(null);
-  }, [fetchStats, playNotificationSound, sendBrowserNotification]);
+  }, [checkAndLogIncrementalSession, fetchStats, playNotificationSound, sendBrowserNotification]);
 
   // Handle reload completion if timer expired while tab closed
   useEffect(() => {
@@ -216,20 +246,24 @@ export const TimerProvider = ({ children }) => {
         const remaining = Math.max(0, Math.round((currentTarget - Date.now()) / 1000));
         setTimeLeft(remaining);
 
-        // Update live study seconds for real-time display
-        if (isStudyPhase && sessionStartTime) {
-          const elapsed = Math.round((Date.now() - new Date(sessionStartTime).getTime()) / 1000);
+        // Update live study seconds & check per-minute recording
+        if (isStudyPhase) {
+          activeStudySecondsRef.current += 1;
+          const elapsed = activeStudySecondsRef.current;
           setLiveStudySeconds(elapsed);
+
+          // Check if 60 seconds (1 minute) has elapsed since last log
+          if ((elapsed - loggedSecondsRef.current) >= 60) {
+            checkAndLogIncrementalSession(false, mode, isStudyPhase);
+          }
         }
 
         if (remaining <= 0) {
           clearInterval(timerRef.current);
-          // Pass current state values directly to avoid stale closures
           handlePhaseComplete(mode, isStudyPhase, sessionStartTime, totalDuration, customBreak, customStudy);
         }
       };
 
-      // Tick immediately on start, then every second
       tick();
       timerRef.current = setInterval(tick, 1000);
     } else {
@@ -245,7 +279,7 @@ export const TimerProvider = ({ children }) => {
         timerRef.current = null;
       }
     };
-  }, [isActive, targetEndTimestamp, mode, isStudyPhase, sessionStartTime, totalDuration, customBreak, customStudy, handlePhaseComplete]);
+  }, [isActive, targetEndTimestamp, mode, isStudyPhase, sessionStartTime, totalDuration, customBreak, customStudy, checkAndLogIncrementalSession, handlePhaseComplete]);
 
   // Visibility change handler — resync timer when tab regains focus
   useEffect(() => {
@@ -253,18 +287,11 @@ export const TimerProvider = ({ children }) => {
       if (document.visibilityState === 'visible' && isActive && targetEndTimestamp) {
         const remaining = Math.max(0, Math.round((targetEndTimestamp - Date.now()) / 1000));
         if (remaining <= 0) {
-          // Timer completed while tab was hidden
           setTimeLeft(0);
           clearInterval(timerRef.current);
           handlePhaseComplete(mode, isStudyPhase, sessionStartTime, totalDuration, customBreak, customStudy);
         } else {
           setTimeLeft(remaining);
-        }
-
-        // Update live study seconds
-        if (isStudyPhase && sessionStartTime) {
-          const elapsed = Math.round((Date.now() - new Date(sessionStartTime).getTime()) / 1000);
-          setLiveStudySeconds(elapsed);
         }
       }
     };
@@ -300,31 +327,38 @@ export const TimerProvider = ({ children }) => {
       setTargetEndTimestamp(target);
       setIsActive(true);
     } else {
-      // Pausing — clear the target and update live seconds
+      // Pausing — clear target and record any unlogged 30+ seconds
       setIsActive(false);
       setTargetEndTimestamp(null);
-      if (isStudyPhase && sessionStartTime) {
-        const elapsed = Math.round((Date.now() - new Date(sessionStartTime).getTime()) / 1000);
-        setLiveStudySeconds(elapsed);
-      }
+      checkAndLogIncrementalSession(true, mode, isStudyPhase);
     }
   };
 
   const resetTimer = () => {
+    if (isStudyPhase) {
+      checkAndLogIncrementalSession(true, mode, isStudyPhase);
+    }
     setIsActive(false);
     setTargetEndTimestamp(null);
     setSessionStartTime(null);
     setIsStudyPhase(true);
     setLiveStudySeconds(0);
+    activeStudySecondsRef.current = 0;
+    loggedSecondsRef.current = 0;
     const initialStudyDuration = (mode === 'Custom' ? customStudy : MODES[mode].study) * 60;
     setTimeLeft(initialStudyDuration);
   };
 
   const skipPhase = () => {
+    if (isStudyPhase) {
+      checkAndLogIncrementalSession(true, mode, isStudyPhase);
+    }
     setIsActive(false);
     setTargetEndTimestamp(null);
     setSessionStartTime(null);
     setLiveStudySeconds(0);
+    activeStudySecondsRef.current = 0;
+    loggedSecondsRef.current = 0;
     if (isStudyPhase) {
       toast('Study phase skipped');
       setIsStudyPhase(false);
@@ -337,12 +371,17 @@ export const TimerProvider = ({ children }) => {
   };
 
   const changeMode = (newMode) => {
+    if (isStudyPhase) {
+      checkAndLogIncrementalSession(true, mode, isStudyPhase);
+    }
     setMode(newMode);
     setIsActive(false);
     setTargetEndTimestamp(null);
     setSessionStartTime(null);
     setIsStudyPhase(true);
     setLiveStudySeconds(0);
+    activeStudySecondsRef.current = 0;
+    loggedSecondsRef.current = 0;
     const newDuration = (newMode === 'Custom' ? customStudy : MODES[newMode].study) * 60;
     setTimeLeft(newDuration);
   };
@@ -351,8 +390,13 @@ export const TimerProvider = ({ children }) => {
     setCustomStudy(newStudyMins);
     setCustomBreak(newBreakMins);
     if (mode === 'Custom') {
+      if (isStudyPhase) {
+        checkAndLogIncrementalSession(true, mode, isStudyPhase);
+      }
       setIsActive(false);
       setTargetEndTimestamp(null);
+      activeStudySecondsRef.current = 0;
+      loggedSecondsRef.current = 0;
       const newDuration = (isStudyPhase ? newStudyMins : newBreakMins) * 60;
       setTimeLeft(newDuration);
     }

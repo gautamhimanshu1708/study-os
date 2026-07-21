@@ -120,11 +120,15 @@ export const getStudySessionStats = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        todayStudyHours: Math.round(todayStudyHours * 10) / 10,
-        weeklyStudyHours: Math.round(weeklyStudyHours * 10) / 10,
-        monthlyStudyHours: Math.round(monthlyStudyHours * 10) / 10,
+        todayStudyMinutes,
+        weeklyStudyMinutes,
+        monthlyStudyMinutes,
+        todayStudyHours: Math.round(todayStudyHours * 1000) / 1000,
+        weeklyStudyHours: Math.round(weeklyStudyHours * 100) / 100,
+        monthlyStudyHours: Math.round(monthlyStudyHours * 100) / 100,
         totalSessionsCompleted,
-        totalDeepWorkHours: Math.round(totalDeepWorkHours * 10) / 10,
+        totalDeepWorkMinutes,
+        totalDeepWorkHours: Math.round(totalDeepWorkHours * 100) / 100,
         mostProductiveDay
       }
     });
