@@ -39,8 +39,10 @@ export const register = async (req, res) => {
   }
 
   try {
+    console.log(`[REGISTER] Attempting registration for email: "${email}"`);
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log(`[REGISTER] Email already registered: "${email}"`);
       return res
         .status(400)
         .json({ success: false, message: 'Email is already registered' });
@@ -54,6 +56,7 @@ export const register = async (req, res) => {
       securityAnswer,
     });
 
+    console.log(`[REGISTER] User created: ${user._id}, stored email: "${user.email}"`);
     sendTokenResponse(user, 201, res);
   } catch (error) {
     console.error('Register error:', error);
@@ -73,20 +76,27 @@ export const login = async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
 
   try {
+    console.log(`[LOGIN] Attempting login for email: "${email}"`);
     const user = await User.findOne({ email }).select('+password');
+    
     if (!user) {
+      console.log(`[LOGIN] No user found with email: "${email}"`);
       return res
         .status(401)
         .json({ success: false, message: 'Invalid email or password' });
     }
 
+    console.log(`[LOGIN] User found: ${user._id}, checking password...`);
     const isMatch = await user.matchPassword(password);
+    
     if (!isMatch) {
+      console.log(`[LOGIN] Password mismatch for user: ${user._id}`);
       return res
         .status(401)
         .json({ success: false, message: 'Invalid email or password' });
     }
 
+    console.log(`[LOGIN] Login successful for user: ${user._id}`);
     sendTokenResponse(user, 200, res);
   } catch (error) {
     console.error('Login error:', error);
